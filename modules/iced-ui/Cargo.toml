@@ -6,3 +6,6 @@ edition = "2024"
 [dependencies]
 avisaver-osc.workspace = true
 iced.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
