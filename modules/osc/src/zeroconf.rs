@@ -7,17 +7,22 @@ use std::time::Duration;
 use tokio::sync::Notify;
 use zeroconf::prelude::*;
 use zeroconf::{MdnsService, ServiceRegistration, ServiceType};
+use crate::QueryOptions;
 
+/// Zeroconf server that supports the mDNS lookup portion of OSCQuery queries.
 pub struct ZeroconfServer {
     running: Arc<AtomicBool>,
     shutdown: Arc<Notify>,
 }
 
 impl ZeroconfServer {
-    pub fn start(osc_port: u16) -> Result<ZeroconfServer, OscError> {
+    /// Start a zeroconf server on a given port.
+    ///
+    /// See [`crate::queryserver::QueryServer::port`]
+    pub fn start(osc_port: u16, opts: &QueryOptions) -> Result<ZeroconfServer, OscError> {
         info!("Starting Zeroconf server for port {}", osc_port);
         let mut service = MdnsService::new(ServiceType::new("oscjson", "tcp")?, osc_port);
-        service.set_name("avisaver");
+        service.set_name(&opts.app_name);
         service.set_registered_callback(Box::new(zeroconf_service_register));
         let event_loop = service.register()?;
         let running = Arc::new(AtomicBool::new(true));
@@ -41,6 +46,9 @@ impl ZeroconfServer {
         Ok(ZeroconfServer { running, shutdown })
     }
 
+    /// Stop the zeroconf server and wait for it to shut down.
+    ///
+    /// Dropping the server also stops it but does not wait for it to shut down.
     pub async fn stop(&self) {
         if self.running.swap(false, Ordering::AcqRel) {
             info!("Stopping Zeroconf server...");

@@ -1,5 +1,6 @@
 use thiserror::Error;
 
+/// Type describing all possible OSC errors.
 #[derive(Debug, Error)]
 pub enum OscError {
     #[error("IO error: {0:?}")]
