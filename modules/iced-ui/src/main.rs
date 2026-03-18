@@ -10,11 +10,13 @@ async fn main() {
 
     info!("Starting OSC server...");
 
-    let server = avisaver_osc::zeroconf::ZeroconfServer::start(25569).unwrap();
+    let http = avisaver_osc::queryserver::QueryServer::start().await.unwrap();
+    let zeroconf = avisaver_osc::zeroconf::ZeroconfServer::start(http.port()).unwrap();
 
     time::sleep(Duration::from_secs(10)).await;
 
     info!("Stopping OSC server...");
 
-    server.stop().await;
+    zeroconf.stop().await;
+    http.stop().await;
 }

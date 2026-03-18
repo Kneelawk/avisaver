@@ -3,3 +3,4 @@ extern crate tracing;
 
 pub mod zeroconf;
 pub mod error;
+pub mod queryserver;
