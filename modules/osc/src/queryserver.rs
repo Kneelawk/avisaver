@@ -213,7 +213,7 @@ async fn query_service(
     }
 
     // build node structure
-    // should we be doing ahead of time???
+    // FIXME: should we be doing ahead of time???
     let mut root = Default::default();
     for dir in &opts.directories {
         insert_path(&mut root, dir);
