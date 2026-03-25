@@ -207,6 +207,7 @@ async fn query_service(
     if query.is_some_and(|s| s.starts_with("HOST_INFO")) {
         return json(&OSCQHostInfo {
             name: Some(opts.app_name.clone()),
+            osc_port: Some(opts.udp_port),
             ..Default::default()
         });
     }

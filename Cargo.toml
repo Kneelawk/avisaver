@@ -9,12 +9,19 @@ anyhow = "1"
 hyper = { version = "1", features = ["http1", "http2", "server"] }
 hyper-util = { version = "0.1.20", features = ["server-auto", "server-graceful", "tokio"] }
 iced = "0.14"
+rand = { version = "0.10", features = ["thread_rng"] }
 reqwest = "0.13"
 rosc = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+simple-dns = { version = "0.11" }
+simple-mdns = { version = "0.6", features = ["async-tokio"] }
 thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
-zeroconf = "0.17"
+#zeroconf = "0.17"
+
+#agnostic-mdns = { version = "0.4", features = ["tokio"] }
+#mdns-proto = { version = "0.1.0", features = ["tracing"] }
+searchlight = { version = "0.3", features = ["broadcast"] }

@@ -26,7 +26,7 @@ impl Default for OSCQHostInfo {
         Self {
             name: None,
             extensions: HashMap::from([("ACCESS".to_string(), true)]),
-            osc_ip: None,
+            osc_ip: Some("127.0.0.1".to_string()),
             osc_port: None,
             osc_transport: default_osc_transport(),
         }
@@ -34,7 +34,7 @@ impl Default for OSCQHostInfo {
 }
 
 fn default_osc_transport() -> String {
-    "udp".to_string()
+    "UDP".to_string()
 }
 
 /// Query node json format.
