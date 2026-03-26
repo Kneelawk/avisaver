@@ -1,5 +1,4 @@
-use crate::QueryOptions;
-use crate::error::OscError;
+use crate::error::OSCStartupError;
 use crate::format::{OSCQHostInfo, OSCQNode};
 use hyper::body::Incoming;
 use hyper::http::HeaderValue;
@@ -25,10 +24,15 @@ pub struct QueryServer {
     port: u16,
 }
 
+struct QueryServerInner {
+    host_info: OSCQHostInfo,
+    root: OSCQNode,
+}
+
 impl QueryServer {
     /// Start the http server.
-    pub async fn start(opts: &QueryOptions) -> Result<QueryServer, OscError> {
-        let opts = Arc::new(opts.clone());
+    pub async fn start(host_info: OSCQHostInfo, root: OSCQNode) -> Result<QueryServer, OSCStartupError> {
+        let inner = Arc::new(QueryServerInner { host_info, root });
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let port = listener.local_addr()?.port();
 
@@ -59,11 +63,11 @@ impl QueryServer {
 
                         let stream = TokioIo::new(stream);
 
-                        let opts1 = opts.clone();
+                        let inner1 = inner.clone();
                         let conn = server.serve_connection_with_upgrades(stream, service_fn(move |req| {
-                            let opts2 = opts1.clone();
+                            let inner2 = inner1.clone();
                             async move {
-                                query_service(req, opts2.clone()).await
+                                query_service(req, inner2.clone()).await
                             }
                         }));
                         let conn = graceful.watch(conn.into_owned());
@@ -112,7 +116,7 @@ impl QueryServer {
     ///
     /// Note: dropping the query server will also request the server to stop but does not wait for
     /// the server to finish.
-    pub async fn stop(&self) {
+    pub async fn shutdown(&self) {
         if self.running.swap(false, Ordering::AcqRel) {
             info!("Stopping HTTP server...");
             self.shutdown.notify_one();
@@ -171,56 +175,17 @@ fn text<T: Display + ?Sized, E>(val: &T) -> Result<Response<String>, E> {
     response(200, "text/plain", val)
 }
 
-fn insert_path(root: &mut OSCQNode, path: &str) {
-    let mut full_path = String::new();
-    let mut node = root;
-    for piece in path.split('/') {
-        if piece.is_empty() {
-            continue;
-        }
-
-        full_path += "/";
-        full_path += piece;
-
-        if !node.contents.contains_key(piece) {
-            node.contents.insert(
-                piece.to_string(),
-                OSCQNode {
-                    full_path: full_path.clone(),
-                    ..Default::default()
-                },
-            );
-        }
-
-        node = node
-            .contents
-            .get_mut(piece)
-            .expect("node get contents missing piece");
-    }
-}
-
 async fn query_service(
     req: Request<Incoming>,
-    opts: Arc<QueryOptions>,
+    inner: Arc<QueryServerInner>,
 ) -> Result<Response<String>, Infallible> {
     let query = req.uri().query();
     if query.is_some_and(|s| s.starts_with("HOST_INFO")) {
-        return json(&OSCQHostInfo {
-            name: Some(opts.app_name.clone()),
-            osc_port: Some(opts.udp_port),
-            ..Default::default()
-        });
-    }
-
-    // build node structure
-    // FIXME: should we be doing ahead of time???
-    let mut root = Default::default();
-    for dir in &opts.directories {
-        insert_path(&mut root, dir);
+        return json(&inner.host_info);
     }
 
     // find the node that's being requested
-    let mut node = &root;
+    let mut node = &inner.root;
     let path = req.uri().path();
     for piece in path.split('/') {
         if piece.is_empty() {

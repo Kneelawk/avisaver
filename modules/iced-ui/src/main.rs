@@ -1,9 +1,8 @@
 #[macro_use]
 extern crate tracing;
 
-use rand::RngExt;
+use avisaver_osc::{OSCListener, OSCQuery, QueryOptions};
 use rosc::OscPacket;
-use tokio::net::UdpSocket;
 
 #[tokio::main]
 async fn main() {
@@ -11,51 +10,26 @@ async fn main() {
 
     info!("Starting OSC server...");
 
-    let mut rng = rand::rng();
-
-    info!("Binding UPD listener...");
-    let sock = UdpSocket::bind(("0.0.0.0", 0)).await.unwrap();
-    let udp_addr = sock.local_addr().unwrap();
-
-    let opts = avisaver_osc::QueryOptions {
-        app_name: format!("avisaver-{:X}", rng.random::<u32>()),
+    let mut osc = OSCQuery::new(QueryOptions {
+        app_name: "avisaver".to_string(),
         directories: vec!["/avatar".to_string()],
-        udp_port: udp_addr.port(),
-    };
+        listener: MyListener,
+    })
+    .await
+    .unwrap();
 
-    let http = avisaver_osc::queryserver::QueryServer::start(&opts)
-        .await
-        .unwrap();
-    let mut zeroconf = avisaver_osc::zeroconf::ZeroconfServer::start(http.port(), &opts).unwrap();
-
-    let mut buf = [0u8; rosc::decoder::MTU];
-    loop {
-        tokio::select! {
-            recv = sock.recv_from(&mut buf) => {
-                match recv {
-                    Ok((size, addr)) => {
-                        info!("Received packet with size {} from: {}", size, addr);
-                        let (_, packet) = rosc::decoder::decode_udp(&buf[..size]).unwrap();
-                        handle_packet(packet);
-                    }
-                    Err(err) => {
-                        warn!("Error reading UDP datagram: {:?}", err);
-                        break;
-                    }
-                }
-            }
-            _ = tokio::signal::ctrl_c() => {
-                break;
-            }
-        }
-    }
+    tokio::signal::ctrl_c().await.unwrap();
 
     info!("Stopping OSC server...");
 
-    zeroconf.stop().unwrap();
-    http.stop().await;
+    osc.shutdown().await.unwrap();
 }
 
-fn handle_packet(packet: OscPacket) {
-    info!("Received OSC Packet: {:?}", packet);
+struct MyListener;
+
+#[allow(refining_impl_trait)]
+impl OSCListener for MyListener {
+    async fn packet_received(&self, packet: OscPacket) {
+        info!("Received OSC Packet: {packet:?}");
+    }
 }

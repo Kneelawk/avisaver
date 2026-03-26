@@ -258,7 +258,6 @@ version = "0.1.0"
 dependencies = [
  "avisaver-osc",
  "iced",
- "rand 0.10.0",
  "rosc",
  "tokio",
  "tracing",
@@ -271,6 +270,7 @@ version = "0.1.0"
 dependencies = [
  "hyper",
  "hyper-util",
+ "rand 0.10.0",
  "reqwest",
  "rosc",
  "searchlight",
