@@ -5,8 +5,11 @@ edition = "2024"
 
 [dependencies]
 avisaver-osc.workspace = true
+
+enumset.workspace = true
 iced.workspace = true
 rosc.workspace = true
 tokio.workspace = true
+tokio-stream.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

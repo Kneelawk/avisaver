@@ -58,9 +58,7 @@ impl OSCQuery {
 
         let listener = Arc::new(listener);
 
-        let mut rng = rand::rng();
-
-        let api_app_name = format!("{}-{:X}", &app_name, rng.random::<u32>());
+        let api_app_name = format!("{}-{:X}", &app_name, rand::random::<u32>());
 
         info!("Binding UDP listener...");
         let sock = UdpSocket::bind(("0.0.0.0", 0)).await?;

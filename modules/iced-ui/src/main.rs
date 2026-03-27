@@ -1,36 +1,19 @@
+pub mod application;
+pub mod utils;
+
 #[macro_use]
 extern crate tracing;
 
-use avisaver_osc::{OSCListener, OSCQuery, QueryOptions};
-use rosc::OscPacket;
-use std::net::SocketAddr;
+use crate::application::ASState;
 
-#[tokio::main]
-async fn main() {
+fn main() -> iced::Result {
     tracing_subscriber::fmt::init();
 
-    info!("Starting OSC server...");
+    info!("Hello AviSaver ^-^");
 
-    let mut osc = OSCQuery::new(QueryOptions {
-        app_name: "avisaver".to_string(),
-        directories: vec!["/avatar".to_string()],
-        listener: MyListener,
-    })
-    .await
-    .unwrap();
-
-    tokio::signal::ctrl_c().await.unwrap();
-
-    info!("Stopping OSC server...");
-
-    osc.shutdown().await.unwrap();
-}
-
-struct MyListener;
-
-#[allow(refining_impl_trait)]
-impl OSCListener for MyListener {
-    async fn packet_received(&self, from: SocketAddr, packet: OscPacket) {
-        info!("{from}: Received OSC Packet: {packet:?}");
-    }
+    iced::daemon(ASState::new, ASState::update, ASState::view)
+        .subscription(ASState::subscriptions)
+        .theme(ASState::theme)
+        .title(ASState::title)
+        .run()
 }
