@@ -3,6 +3,7 @@ extern crate tracing;
 
 use avisaver_osc::{OSCListener, OSCQuery, QueryOptions};
 use rosc::OscPacket;
+use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() {
@@ -29,7 +30,7 @@ struct MyListener;
 
 #[allow(refining_impl_trait)]
 impl OSCListener for MyListener {
-    async fn packet_received(&self, packet: OscPacket) {
-        info!("Received OSC Packet: {packet:?}");
+    async fn packet_received(&self, from: SocketAddr, packet: OscPacket) {
+        info!("{from}: Received OSC Packet: {packet:?}");
     }
 }

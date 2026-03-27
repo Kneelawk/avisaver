@@ -7,6 +7,8 @@ use crate::queryserver::QueryServer;
 use crate::zeroconf::ZeroconfServer;
 use rand::RngExt;
 use rosc::OscPacket;
+use std::future::ready;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::Notify;
@@ -16,8 +18,13 @@ pub mod format;
 pub mod queryserver;
 pub mod zeroconf;
 
+/// Listener for various OSC events.
+#[allow(unused_variables)]
 pub trait OSCListener {
-    fn packet_received(&self, packet: OscPacket) -> impl Future + Send + Sync;
+    /// Listen for when a packet is received.
+    fn packet_received(&self, from: SocketAddr, packet: OscPacket) -> impl Future + Send + Sync {
+        ready(())
+    }
 }
 
 /// Options to describe which OSC parameters to accept
@@ -55,9 +62,11 @@ impl OSCQuery {
 
         let api_app_name = format!("{}-{:X}", &app_name, rng.random::<u32>());
 
-        info!("Binding UPD listener...");
+        info!("Binding UDP listener...");
         let sock = UdpSocket::bind(("0.0.0.0", 0)).await?;
         let udp_addr = sock.local_addr()?;
+
+        info!("UDP listener bound to port {}", udp_addr.port());
 
         let host_info = OSCQHostInfo {
             name: Some(app_name.clone()),
@@ -95,7 +104,7 @@ impl OSCQuery {
                                 trace!("Received packet of size {size} from {addr}");
                                 match rosc::decoder::decode_udp(&buf) {
                                     Ok((_, packet)) => {
-                                        listener.packet_received(packet).await;
+                                        listener.packet_received(addr, packet).await;
                                     }
                                     Err(err) => {
                                         warn!("Error decoding OSC packet: {err:?}");
