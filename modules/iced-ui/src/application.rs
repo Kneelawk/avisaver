@@ -1,25 +1,29 @@
+use crate::styles::menu_button;
 use crate::utils::ResultExt;
 use avisaver_osc::error::OSCStartupError;
 use avisaver_osc::{OSCListener, OSCQuery, QueryOptions};
 use enumset::{EnumSet, EnumSetType};
-use iced::widget::{column, container};
+use iced::widget::{button, column, container, row, rule};
 use iced::window::Position;
 use iced::window::settings::PlatformSpecific;
 use iced::{Element, Size, Subscription, Task, Theme, window};
 use rosc::OscPacket;
 use std::net::SocketAddr;
-use tokio::sync::mpsc;
+use std::sync::Arc;
+use tokio::sync::{Mutex, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
 
 const APPLICATION_ID: &str = "com.kneelawk.avisaver";
 const APPLICATION_NAME: &str = "avisaver";
 const APPLICATION_TITLE: &str = "AviSaver";
 
+#[derive(Clone)]
 pub enum ASMsg {
-    OSCQueryStarted(Result<OSCQuery, OSCStartupError>),
+    OSCQueryStarted(Arc<Mutex<Option<Result<OSCQuery, OSCStartupError>>>>),
     OSCPacket(SocketAddr, OscPacket),
     WindowClosed(window::Id),
     ShutdownTaskFinished(ShutdownTask),
+    MenuButton(MenuButton),
 }
 
 pub struct ASState {
@@ -47,14 +51,14 @@ impl ASState {
         let (osc_tx, osc_rx) = mpsc::channel(64);
         let osc_events = Task::stream(ReceiverStream::new(osc_rx));
         let start_osc = Task::future(async {
-            ASMsg::OSCQueryStarted(
+            ASMsg::OSCQueryStarted(Arc::new(Mutex::new(Some(
                 OSCQuery::new(QueryOptions {
                     app_name: APPLICATION_NAME.to_string(),
                     directories: vec!["/avatar".to_string()],
                     listener: ASOSCListener { tx: osc_tx },
                 })
                 .await,
-            )
+            ))))
         });
 
         (
@@ -67,8 +71,47 @@ impl ASState {
         )
     }
 
-    pub fn shutdown(&mut self) -> Task<ASMsg> {
-        info!("Shutting down AviSaver. Goodbye!");
+    pub fn update(&mut self, msg: ASMsg) -> Task<ASMsg> {
+        match msg {
+            ASMsg::WindowClosed(id) => {
+                if id == self.root_window {
+                    self.start_shutdown()
+                } else {
+                    // TODO: handle other window closes
+                    Task::none()
+                }
+            }
+            ASMsg::ShutdownTaskFinished(task) => {
+                self.running_shutdown_tasks.remove(task);
+                if self.running_shutdown_tasks.is_empty() {
+                    self.finish_shutdown()
+                } else {
+                    Task::none()
+                }
+            }
+            ASMsg::OSCQueryStarted(res) => match res
+                .try_lock()
+                .expect("OSCQuery mutex already borrowed??? something very bad has happened")
+                .take()
+                .expect("OSCQuery already taken??? something very bad has happened")
+            {
+                Ok(osc) => {
+                    self.osc = Some(osc);
+                    Task::none()
+                }
+                Err(err) => {
+                    error!(
+                        "Error starting OSCQuery. AviSaver cannot run without OSCQuery. Error: {err:?}"
+                    );
+                    self.start_shutdown()
+                }
+            },
+            _ => Task::none(),
+        }
+    }
+
+    fn start_shutdown(&mut self) -> Task<ASMsg> {
+        info!("Shutting down AviSaver...");
 
         let mut tasks = vec![];
 
@@ -81,46 +124,31 @@ impl ASState {
             }));
         }
 
+        if self.running_shutdown_tasks.is_empty() {
+            return self.finish_shutdown();
+        }
+
         Task::batch(tasks)
     }
 
-    pub fn update(&mut self, msg: ASMsg) -> Task<ASMsg> {
-        match msg {
-            ASMsg::WindowClosed(id) => {
-                if id == self.root_window {
-                    self.shutdown()
-                } else {
-                    // TODO: handle other window closes
-                    Task::none()
-                }
-            }
-            ASMsg::ShutdownTaskFinished(task) => {
-                self.running_shutdown_tasks.remove(task);
-                if self.running_shutdown_tasks.is_empty() {
-                    iced::exit()
-                } else {
-                    Task::none()
-                }
-            }
-            ASMsg::OSCQueryStarted(res) => match res {
-                Ok(osc) => {
-                    self.osc = Some(osc);
-                    Task::none()
-                }
-                Err(err) => {
-                    error!(
-                        "Error starting OSCQuery. AviSaver cannot run without OSCQuery. Error: {err:?}"
-                    );
-                    self.shutdown()
-                }
-            },
-            _ => Task::none(),
-        }
+    fn finish_shutdown(&self) -> Task<ASMsg> {
+        info!("Cleanup done. Goodbye! ^-^");
+
+        iced::exit()
     }
 
     pub fn view(&'_ self, window_id: window::Id) -> Element<'_, ASMsg> {
         if window_id == self.root_window {
-            container("Hello World!").padding(10).into()
+            column![
+                row![
+                    button("File")
+                        .style(menu_button)
+                        .on_press(ASMsg::MenuButton(MenuButton::File)),
+                ],
+                rule::horizontal(1),
+                container("Hello World!").padding(10)
+            ]
+            .into()
         } else {
             column([]).into()
         }
@@ -146,6 +174,11 @@ impl ASState {
 #[derive(EnumSetType, Debug)]
 pub enum ShutdownTask {
     OSCShutdown,
+}
+
+#[derive(Debug, Clone)]
+pub enum MenuButton {
+    File,
 }
 
 struct ASOSCListener {

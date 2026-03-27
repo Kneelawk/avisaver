@@ -1,5 +1,6 @@
 pub mod application;
 pub mod utils;
+pub mod styles;
 
 #[macro_use]
 extern crate tracing;
