@@ -5,7 +5,6 @@ use crate::error::{OSCShutdownError, OSCStartupError};
 use crate::format::{OSCQHostInfo, OSCQNode};
 use crate::queryserver::QueryServer;
 use crate::zeroconf::ZeroconfServer;
-use rand::RngExt;
 use rosc::OscPacket;
 use std::future::ready;
 use std::net::SocketAddr;

@@ -265,6 +265,7 @@ dependencies = [
  "avisaver-osc",
  "enumset",
  "iced",
+ "lazy_static",
  "rosc",
  "tokio",
  "tokio-stream",

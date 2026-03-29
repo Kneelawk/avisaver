@@ -1,11 +1,10 @@
-pub mod application;
+pub mod app;
 pub mod utils;
-pub mod styles;
 
 #[macro_use]
 extern crate tracing;
 
-use crate::application::ASState;
+use crate::app::ASState;
 
 fn main() -> iced::Result {
     tracing_subscriber::fmt::init();

@@ -11,6 +11,7 @@ futures = "0.3"
 hyper = { version = "1", features = ["http1", "http2", "server"] }
 hyper-util = { version = "0.1.20", features = ["server-auto", "server-graceful", "tokio"] }
 iced = { version = "0.14", features = ["svg", "tokio"] }
+lazy_static = "1"
 rand = { version = "0.10", features = ["thread_rng"] }
 reqwest = "0.13"
 rosc = "0.11"

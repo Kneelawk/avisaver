@@ -1,9 +1,9 @@
-use crate::styles::menu_button;
+use crate::app::root::{RootMsg, RootState};
 use crate::utils::ResultExt;
 use avisaver_osc::error::OSCStartupError;
 use avisaver_osc::{OSCListener, OSCQuery, QueryOptions};
 use enumset::{EnumSet, EnumSetType};
-use iced::widget::{button, column, container, row, rule};
+use iced::widget::{column};
 use iced::window::Position;
 use iced::window::settings::PlatformSpecific;
 use iced::{Element, Size, Subscription, Task, Theme, window};
@@ -12,6 +12,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
+
+pub mod root;
+pub mod styles;
+pub mod icons;
 
 const APPLICATION_ID: &str = "com.kneelawk.avisaver";
 const APPLICATION_NAME: &str = "avisaver";
@@ -23,7 +27,7 @@ pub enum ASMsg {
     OSCPacket(SocketAddr, OscPacket),
     WindowClosed(window::Id),
     ShutdownTaskFinished(ShutdownTask),
-    MenuButton(MenuButton),
+    Root(RootMsg),
 }
 
 pub struct ASState {
@@ -31,6 +35,8 @@ pub struct ASState {
     running_shutdown_tasks: EnumSet<ShutdownTask>,
 
     osc: Option<OSCQuery>,
+
+    root: RootState,
 }
 
 impl ASState {
@@ -66,6 +72,7 @@ impl ASState {
                 root_window: id,
                 running_shutdown_tasks: Default::default(),
                 osc: None,
+                root: RootState::new(),
             },
             Task::batch([task.discard(), osc_events, start_osc]),
         )
@@ -106,6 +113,7 @@ impl ASState {
                     self.start_shutdown()
                 }
             },
+            ASMsg::Root(msg) => self.root.update(msg).map(ASMsg::Root),
             _ => Task::none(),
         }
     }
@@ -139,16 +147,7 @@ impl ASState {
 
     pub fn view(&'_ self, window_id: window::Id) -> Element<'_, ASMsg> {
         if window_id == self.root_window {
-            column![
-                row![
-                    button("File")
-                        .style(menu_button)
-                        .on_press(ASMsg::MenuButton(MenuButton::File)),
-                ],
-                rule::horizontal(1),
-                container("Hello World!").padding(10)
-            ]
-            .into()
+            self.root.view().map(ASMsg::Root)
         } else {
             column([]).into()
         }

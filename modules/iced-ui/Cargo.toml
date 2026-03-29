@@ -8,6 +8,7 @@ avisaver-osc.workspace = true
 
 enumset.workspace = true
 iced.workspace = true
+lazy_static.workspace = true
 rosc.workspace = true
 tokio.workspace = true
 tokio-stream.workspace = true
