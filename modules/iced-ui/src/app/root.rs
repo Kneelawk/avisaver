@@ -2,6 +2,7 @@ use crate::app::icons;
 use iced::widget::tooltip::Position;
 use iced::widget::{button, column, container, row, rule, space, svg, tooltip};
 use iced::{Border, Element, Task};
+use iced::border::Radius;
 
 pub struct RootState {
     selected_tab: SelectedTab,
@@ -68,7 +69,7 @@ fn side_button(selected_tab: SelectedTab, for_tab: SelectedTab) -> Element<'stat
 
             button::Style {
                 border: Border {
-                    radius: Default::default(),
+                    radius: Radius::new(128.0),
                     ..style.border
                 },
                 ..style
