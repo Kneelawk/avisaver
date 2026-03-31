@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+avisaver-core.workspace = true
 avisaver-osc.workspace = true
 
 enumset.workspace = true

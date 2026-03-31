@@ -1,11 +1,14 @@
 [workspace]
 resolver = "3"
-members = ["modules/iced-ui", "modules/osc"]
+members = ["modules/core", "modules/iced-ui", "modules/osc"]
 
 [workspace.dependencies]
+avisaver-core = { path = "modules/core" }
 avisaver-osc = { path = "modules/osc" }
 
 anyhow = "1"
+const_format = "0.2"
+directories = "6"
 enumset = "1"
 futures = "0.3"
 hyper = { version = "1", features = ["http1", "http2", "server"] }
@@ -20,7 +23,8 @@ searchlight = { version = "0.3", features = ["broadcast"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tokio = { version = "1", features = ["fs", "io-util", "macros", "rt-multi-thread", "signal", "sync"] }
 tokio-stream = "0.1"
+toml = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
