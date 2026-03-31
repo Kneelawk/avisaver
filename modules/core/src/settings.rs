@@ -71,8 +71,11 @@ impl Default for SettingsData {
 
 impl SettingsData {
     async fn load() -> Self {
+        info!("Loading settings...");
+
         let settings_file = SETTINGS_FILE.deref();
         if !try_exists(settings_file).await.is_ok_and(|exists| exists) {
+            info!("No existing settings file found, using defaults.");
             return Self::default();
         }
 
@@ -99,6 +102,8 @@ impl SettingsData {
         };
 
         *SETTINGS.lock().await = data.clone();
+
+        info!("Settings loaded.");
 
         data
     }

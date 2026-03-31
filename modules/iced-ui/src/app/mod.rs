@@ -11,6 +11,7 @@ use iced::{Element, Size, Subscription, Task, Theme, window};
 use rosc::OscPacket;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{Mutex, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
 
@@ -27,6 +28,7 @@ pub enum ASMsg {
     OSCPacket(SocketAddr, OscPacket),
     WindowOpened(window::Id),
     WindowClosed(window::Id),
+    SplashClose(window::Id),
     StartupTaskFinished(StartupTask),
     ShutdownTaskFinished(ShutdownTask),
     Root(RootMsg),
@@ -117,14 +119,20 @@ impl ASState {
             ASMsg::WindowOpened(id) => {
                 if self.root_window.is_some_and(|root| root == id) {
                     if let Some(splash_id) = self.splash_window {
-                        self.splash_window = None;
-                        window::close(splash_id)
+                        Task::future(async move {
+                            tokio::time::sleep(Duration::from_millis(100)).await;
+                            ASMsg::SplashClose(splash_id)
+                        })
                     } else {
                         Task::none()
                     }
                 } else {
                     Task::none()
                 }
+            }
+            ASMsg::SplashClose(id) => {
+                self.splash_window = None;
+                window::close(id)
             }
             ASMsg::StartupTaskFinished(task) => self.check_startup(task),
             ASMsg::ShutdownTaskFinished(task) => {
