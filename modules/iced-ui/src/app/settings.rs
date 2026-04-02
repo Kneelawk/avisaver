@@ -3,6 +3,7 @@ use iced::{Element, Task};
 
 pub struct SettingsState {}
 
+#[derive(Clone)]
 pub enum SettingsMsg {}
 
 impl SettingsState {

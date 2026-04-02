@@ -1,16 +1,19 @@
 use crate::app::icons;
+use crate::app::settings::{SettingsMsg, SettingsState};
+use iced::border::Radius;
 use iced::widget::tooltip::Position;
 use iced::widget::{button, column, container, row, rule, space, svg, tooltip};
 use iced::{Border, Element, Task};
-use iced::border::Radius;
 
 pub struct RootState {
     selected_tab: SelectedTab,
+    settings: SettingsState,
 }
 
 #[derive(Clone)]
 pub enum RootMsg {
     SetTab(SelectedTab),
+    Settings(SettingsMsg),
 }
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
@@ -25,6 +28,7 @@ impl RootState {
     pub fn new() -> Self {
         Self {
             selected_tab: Default::default(),
+            settings: SettingsState::new(),
         }
     }
 
@@ -34,10 +38,17 @@ impl RootState {
                 self.selected_tab = tab;
                 Task::none()
             }
+            RootMsg::Settings(msg) => self.settings.update(msg).map(RootMsg::Settings),
         }
     }
 
     pub fn view(&'_ self) -> Element<'_, RootMsg> {
+        let content = match self.selected_tab {
+            SelectedTab::Saves => container("TODO: Saves").into(),
+            SelectedTab::Templates => container("TODO: Templates").into(),
+            SelectedTab::Settings => self.settings.view().map(RootMsg::Settings),
+        };
+
         row![
             column![
                 side_button(self.selected_tab, SelectedTab::Saves),
@@ -46,7 +57,7 @@ impl RootState {
                 side_button(self.selected_tab, SelectedTab::Settings),
             ],
             rule::vertical(1),
-            container("test"),
+            content,
         ]
         .into()
     }
